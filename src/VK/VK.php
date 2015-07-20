@@ -4,6 +4,7 @@
  * The PHP class for vk.com API and to support OAuth.
  * @author Vlad Pronsky <vladkens@yandex.ru>
  * @license https://raw.github.com/vladkens/VK/master/LICENSE MIT
+ * @version 0.1.6
  */
 
 namespace VK;
@@ -59,12 +60,19 @@ class VK
      */
     public function __construct($app_id, $api_secret, $access_token = null)
     {
-        $this->app_id = $app_id;
-        $this->api_secret = $api_secret;
-        if (!is_null($access_token)) { $this->setAccessToken($access_token); }
-        
+        $this->app_id       = $app_id;
+        $this->api_secret   = $api_secret;
+        $this->access_token = $access_token;
+
         $this->ch = curl_init();
 
+        if (!is_null($this->access_token)) {
+            if (!$this->checkAccessToken()) {
+                throw new VKException('Invalide access token.');
+            } else {
+                $this->auth = true;
+            }
+        }
     }
 
     /**
@@ -84,22 +92,6 @@ class VK
     public function setApiVersion($version)
     {
         $this->api_version = $version;
-    }
-
-    /**
-     * Set Access Token.
-     * @param   string  $access_token
-     * @throws  VKException
-     * @return  void
-     */
-    public function setAccessToken($access_token)
-    {
-        $this->auth = $this->checkAccessToken();
-        if (!$this->auth) {
-            throw new VKException('Invalid access token.');
-        } else {
-            $this->access_token = $access_token;
-        }
     }
 
     /**
@@ -215,7 +207,6 @@ class VK
         $sig .= $this->api_secret;
 
         $parameters['sig'] = md5($sig);
-
         if ($method == 'execute' || $requestMethod == 'post')
         {
             $rs = $this->request(
@@ -230,7 +221,7 @@ class VK
     }
 
     /**
-     * Concatenate keys and values to url format and return url.
+     * Concatinate keys and values to url format and return url.
      * @param   string  $url
      * @param   array   $parameters
      * @return  string
@@ -250,6 +241,7 @@ class VK
      */
     private function request($url, $method = 'GET', $postfields = array())
     {
+
         curl_setopt_array($this->ch, array(
             CURLOPT_USERAGENT       => 'VK/1.0 (+https://github.com/vladkens/VK))',
             CURLOPT_RETURNTRANSFER  => true,
@@ -263,4 +255,3 @@ class VK
     }
 
 };
-    
