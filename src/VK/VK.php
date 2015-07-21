@@ -9,6 +9,8 @@
 
 namespace VK;
 
+use GuzzleHttp\Client;
+
 class VK
 {
     /**
@@ -241,17 +243,34 @@ class VK
      */
     private function request($url, $method = 'GET', $postfields = array())
     {
+        $client = new Client();
+        $response = null;
+        if($method == 'POST') {
+            $response = $client->post($url, $postfields);
+        } else {
+            $response = $client->get($url, $postfields);
+        }
 
-        curl_setopt_array($this->ch, array(
-            CURLOPT_USERAGENT       => 'VK/1.0 (+https://github.com/vladkens/VK))',
-            CURLOPT_RETURNTRANSFER  => true,
-            CURLOPT_SSL_VERIFYPEER  => false,
-            CURLOPT_POST            => ($method == 'POST'),
-            CURLOPT_POSTFIELDS      => $postfields,
-            CURLOPT_URL             => $url
-        ));
+        $body = (string)$response->getBody();
 
-        return curl_exec($this->ch);
+        $encoded = json_decode($body, true);
+        //
+        if(isset($encoded['error'])) {
+            throw new VkErrorException($response);
+        }
+
+        return (string)$response->getBody();
+
+//        curl_setopt_array($this->ch, array(
+//            CURLOPT_USERAGENT       => 'VK/1.0 (+https://github.com/vladkens/VK))',
+//            CURLOPT_RETURNTRANSFER  => true,
+//            CURLOPT_SSL_VERIFYPEER  => false,
+//            CURLOPT_POST            => ($method == 'POST'),
+//            CURLOPT_POSTFIELDS      => $postfields,
+//            CURLOPT_URL             => $url
+//        ));
+//
+//        return curl_exec($this->ch);
     }
 
 };
